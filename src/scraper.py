@@ -16,13 +16,18 @@ def get_dynamic_queries(filepath="niches.txt"):
         return []
 
 def search_target_videos(youtube, query, max_results=10):
-    """Searches YouTube for videos and captures publish dates."""
-    print(f"[INFO] Searching YouTube for: '{query}'...")
+    """Searches YouTube specifically for Shorts and captures publish dates."""
+    print(f"[INFO] Searching YouTube Shorts for: '{query}'...")
+    
+    # 1. Append #shorts to the query to force the algorithm's hand
+    shorts_query = f"{query} #shorts"
+    
     search_response = youtube.search().list(
-        q=query,
+        q=shorts_query,
         part="id,snippet",
         type="video",
-        order="date", # Still sorts by newest
+        videoDuration="short", # 2. Native API filter: strictly limits to videos under 4 minutes
+        order="relevance",     # 3. Pulls videos with actual algorithmic traction
         maxResults=max_results
     ).execute()
 
