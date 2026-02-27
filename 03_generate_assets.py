@@ -24,15 +24,18 @@ async def run_asset_generation():
         return
 
     # Generate Audio
-    audio_path = "data/assets/voiceover.mp3"
-    subs_path = "data/assets/subtitles.vtt"
-    await generate_audio(script_json, audio_path, subs_path)
-
-    # Generate Images
-    base_image_path = "data/assets/scene"
-    generate_all_images(script_json, base_filename=base_image_path)
+    audio_path = "data/assets/audio.wav"
+    vtt_path = "data/assets/subtitles.vtt"
+    ass_path = "data/assets/subtitles.ass"
     
-    logger.info("[SUCCESS] All assets generated in data/assets/")
+    # 1. Generate Audio & Dual Subtitles
+    await generate_audio(script_json, audio_path, vtt_path, ass_path)
+
+    # # Generate Images
+    # base_image_path = "data/assets/scene"
+    # generate_all_images(script_json, base_filename=base_image_path)
+    
+    # logger.info("[SUCCESS] All assets generated in data/assets/")
 
 if __name__ == "__main__":
     asyncio.run(run_asset_generation())

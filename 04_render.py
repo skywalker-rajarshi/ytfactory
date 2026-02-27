@@ -2,6 +2,7 @@ import os
 import glob
 import subprocess
 import json
+from src.cleanup_engine import archive_and_cleanup
 
 def get_audio_duration(audio_path):
     """Uses ffprobe to extract the exact length of the audio file in seconds."""
@@ -43,6 +44,7 @@ def render_pipeline():
     assets_dir = os.path.join(base_dir, "data", "assets")
     audio_path = os.path.join(assets_dir, "voiceover.mp3")
     subs_path = os.path.join(assets_dir, "subtitles.vtt")
+    ass_path = os.path.join(assets_dir, "subtitles.ass")
     fonts_dir = os.path.join(assets_dir, "fonts")
     final_output = os.path.join(base_dir, "data", "final_short.mp4")
     
@@ -91,7 +93,7 @@ def render_pipeline():
         "-i", merged_video, 
         "-i", audio_path,
         "-c:v", "h264_videotoolbox", 
-        "-vf", f"subtitles={subs_path}:fontsdir={fonts_dir}:force_style='{style}'",
+        "-vf", f"ass='{ass_path}':fontsdir='{fonts_dir}'", # Uses the native ASS filter
         "-c:a", "aac", "-b:a", "192k",
         final_output
     ]
@@ -104,6 +106,8 @@ def render_pipeline():
         os.remove(clip)
     os.remove(concat_file)
     os.remove(merged_video)
+
+    archive_and_cleanup(base_dir, final_output)
 
 if __name__ == "__main__":
     render_pipeline()
