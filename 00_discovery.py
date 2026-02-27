@@ -41,11 +41,18 @@ def refine_ideas_with_llm(raw_queries):
     queries_text = "\n".join(raw_queries)
     
     prompt = f"""
-    You are a YouTube Shorts strategist. Below is a list of actual, data-backed search queries humans are typing into YouTube.
-    Most of them are boring. I need you to find the underlying interests in this data and generate 10 highly engaging, 
-    slightly melancholic or terrifying YouTube Shorts concepts based on them.
+    You are a YouTube Shorts SEO and metadata strategist. Below is a list of actual, data-backed search queries humans are typing into YouTube.
+    I need you to extract the 10 most fascinating, existential, or mildly terrifying core concepts from this data.
     
-    Format the output as a simple list of 10 titles, one per line, with no numbers or bullet points.
+    Instead of writing video titles, you must output highly optimized search query strings designed to find viral YouTube Shorts. 
+    Each line must consist of a 2-to-4 word core topic, followed by 2 highly relevant hashtags.
+    
+    Example format:
+    fermi paradox #space #existential
+    bootes void #astronomy #terrifying
+    camus absurdism #philosophy #mindblown
+    
+    Format the output as a simple list of 10 keyword clusters, one per line, strictly lowercase, with no numbers or bullet points.
     
     RAW QUERIES:
     {queries_text}

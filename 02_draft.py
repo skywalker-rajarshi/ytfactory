@@ -2,21 +2,32 @@ import sys
 import json
 import os
 from dotenv import load_dotenv
-from src.llm_engine import draft_script
+from src.llm_engine import draft_script, generate_narrative_premise
 from src.logger import get_factory_logger
 
 logger = get_factory_logger()
 
-def run_drafting(topic):
+def run_drafting(raw_input):
     load_dotenv()
     logger.info("========================================")
     logger.info("        STATION 2: SCRIPT DRAFTING      ")
     logger.info("========================================")
     
-    script_json = draft_script(topic)
+    os.makedirs("data/logs", exist_ok=True)
+    
+    # 1. The Middleware Translation
+    logger.info(f"[INFO] Raw Input Received: {raw_input}")
+    logger.info("[INFO] Generating Provocative Premise...")
+    
+    premise = generate_narrative_premise(raw_input)
+    logger.info(f"\n[DIRECTIVE] => {premise}\n")
+    
+    # 2. The Main Script Generation
+    logger.info("[INFO] Drafting highly optimized Shorts script...")
+    script_json = draft_script(premise) # Pass the expanded premise, not the hashtags
+    
     if not script_json:
-        # This will print to terminal AND permanently save to data/logs/error_log.txt
-        logger.error(f"Script drafting failed for topic: {topic}")
+        logger.error(f"Script drafting failed for topic: {premise}")
         sys.exit(1)
 
     output_path = "data/logs/latest_script.json"

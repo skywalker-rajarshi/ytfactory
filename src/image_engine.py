@@ -4,12 +4,9 @@ import time
 import random
 
 def generate_all_images(script_json, base_filename="data/assets/scene"):
-    # 1. Generate a single master seed for this specific video
     master_seed = random.randint(1, 999999)
     print(f"[INFO] Locking visual consistency with Master Seed: {master_seed}")
-
-    """Loops through the JSON script and generates an image for every scene."""
-    print("[INFO] Generating images for all scenes via Replicate HTTP API...")
+    print("[INFO] Generating images via Replicate HTTP API with Exponential Backoff...")
 
     image_paths = []
     api_token = os.getenv("REPLICATE_API_TOKEN")
@@ -38,12 +35,11 @@ def generate_all_images(script_json, base_filename="data/assets/scene"):
             print(f"[WARNING] No visual prompt for scene {scene_num}, skipping.")
             continue
 
-        enhanced_prompt = f"{visual_prompt}, cinematic lighting, 8k resolution, highly detailed, atmospheric, vivid colors"
         output_filename = f"{base_filename}_{scene_num}.jpg"
 
         payload = {
             "input": {
-                "prompt": enhanced_prompt,
+                "prompt": visual_prompt, # Trusting the LLM prose directly
                 "aspect_ratio": "9:16",
                 "output_format": "jpg",
                 "num_outputs": 1,
@@ -54,20 +50,48 @@ def generate_all_images(script_json, base_filename="data/assets/scene"):
             }
         }
 
-        try:
-            endpoint = "https://api.replicate.com/v1/models/black-forest-labs/flux-schnell/predictions"
-            response = requests.post(endpoint, json=payload, headers=headers)
-            response.raise_for_status()
-            prediction = response.json()
+        endpoint = "https://api.replicate.com/v1/models/black-forest-labs/flux-schnell/predictions"
+        max_retries = 5
+        base_delay = 10
 
+        # --- THE EXPONENTIAL BACKOFF RETRY LOOP ---
+        for attempt in range(max_retries):
+            try:
+                response = requests.post(endpoint, json=payload, headers=headers)
+                
+                # If we hit the rate limit, trigger the backoff
+                if response.status_code == 429:
+                    wait_time = base_delay * (2 ** attempt) # 10s, 20s, 40s...
+                    print(f"[WARNING] 429 Rate Limit hit. Retrying Scene {scene_num} in {wait_time}s (Attempt {attempt+1}/{max_retries})...")
+                    time.sleep(wait_time)
+                    continue
+                
+                # If it's a different error, this will raise it
+                response.raise_for_status()
+                prediction = response.json()
+                
+                # Break out of the retry loop if the POST request succeeded
+                break 
+                
+            except Exception as e:
+                print(f"[ERROR] HTTP request failed: {e}")
+                # If it's not a 429, we still want to retry just in case it's a network blip
+                time.sleep(base_delay)
+                
+        else:
+            print(f"[ERROR] Scene {scene_num} permanently failed after {max_retries} retries. Skipping.")
+            continue
+
+        # --- THE POLLING LOOP ---
+        try:
             while prediction["status"] not in ["succeeded", "failed", "canceled"]:
-                time.sleep(1)
+                time.sleep(2) # Increased polling delay to prevent secondary rate limits
                 poll_resp = requests.get(prediction["urls"]["get"], headers=headers)
                 poll_resp.raise_for_status()
                 prediction = poll_resp.json()
 
             if prediction["status"] != "succeeded":
-                print(f"[ERROR] Scene {scene_num} failed: {prediction.get('error')}")
+                print(f"[ERROR] Scene {scene_num} generation failed on Replicate's end: {prediction.get('error')}")
                 continue
 
             image_url = prediction["output"][0]
@@ -80,6 +104,10 @@ def generate_all_images(script_json, base_filename="data/assets/scene"):
             image_paths.append(output_filename)
 
         except Exception as e:
-            print(f"[ERROR] HTTP request failed for Scene {scene_num}: {e}")
+            print(f"[ERROR] Failed to download or poll Scene {scene_num}: {e}")
+
+        # A baseline 5-second rest before moving to the NEXT scene
+        print("[INFO] Resting for 5 seconds before next scene...")
+        time.sleep(5)
 
     return image_paths

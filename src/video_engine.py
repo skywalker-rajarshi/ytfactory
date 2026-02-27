@@ -1,6 +1,9 @@
 from moviepy import ImageClip, AudioFileClip, TextClip, CompositeVideoClip, concatenate_videoclips
 import os
 
+current_dir = os.getcwd()
+font_path = os.path.join(current_dir, "data", "assets", "fonts", "Montserrat-Bold.ttf")
+
 def parse_vtt_time(time_str):
     """Converts VTT timestamp (00:00:01.230) to seconds."""
     parts = time_str.replace(',', '.').split(':')
@@ -55,7 +58,7 @@ def create_video(audio_path, image_paths, vtt_path, output_filename="data/assets
         for sub in subs_data:
             # MoviePy v2.0 syntax for TextClip
             txt_clip = TextClip(
-                font="Arial-Bold", # Change to any font installed on your Mac
+                font=font_path, # Change to any font installed on your Mac
                 text=sub['text'],
                 font_size=90,
                 color='white',

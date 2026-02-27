@@ -3,6 +3,41 @@ import json
 from google import genai
 import ollama
 
+import os
+from google import genai
+
+def generate_narrative_premise(raw_keywords):
+    """Dynamically assumes a persona based on keywords to generate a premise."""
+    api_key = os.getenv("GEMINI_API_KEY")
+    client = genai.Client(api_key=api_key)
+    
+    prompt = f"""
+    You are an elite YouTube Shorts creative director and a chameleon-like expert.
+    I will give you raw YouTube search keywords: "{raw_keywords}"
+    
+    STEP 1: Analyze the keywords and determine the core subject (e.g., astrophysics, philosophy, speculative biology, history).
+    STEP 2: Instantly adopt the persona of a world-class expert in that specific field (e.g., a melancholic philosopher, a theoretical physicist, a rogue evolutionary biologist).
+    STEP 3: Translate the keywords into a single, highly provocative, and captivating narrative premise for a 60-second short film.
+    
+    DYNAMIC TONE RULES:
+    - If Philosophy/Existentialism: Make it heavy, melancholic, and deeply introspective.
+    - If Space/Cosmology: Make it mind-bending, isolating, and terrifyingly vast.
+    - If Speculative Science (e.g., human biology, physics "what ifs"): Make it wondrous, slightly unsettling, and paradigm-shifting.
+    - If History/True Crime: Make it gritty, cinematic, and suspenseful.
+    
+    Output ONLY the single sentence premise. No quotes, no pleasantries, no bullet points, and do NOT announce your assumed persona. Just deliver the raw, heavy premise.
+    """
+    
+    try:
+        response = client.models.generate_content(
+            model='gemini-3-flash-preview', 
+            contents=prompt,
+        )
+        return response.text.strip()
+    except Exception as e:
+        print(f"[ERROR] Premise generation failed: {e}")
+        return raw_keywords
+    
 def _get_prompt(topic_title, channel_aesthetic="Shot on 35mm film, anamorphic lens, f/2.8, melancholic, atmospheric, highly detailed, muted colors"):
     return f"""
     You are an expert YouTube Shorts retention engineer, scriptwriter, and AI image prompt specialist. 
