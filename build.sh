@@ -18,7 +18,8 @@ source venv/bin/activate
 
 # Run the modules sequentially
 python3 02_draft.py "$TOPIC"
-python3 03_generate_assets.py
-python3 04_render.py
+python3 03_generate_audio.py
+python3 04_generate_images.py
+python3 05_render.py
 
 echo "Pipeline execution finished."
