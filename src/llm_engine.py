@@ -3,10 +3,7 @@ import json
 from google import genai
 import ollama
 
-import os
-from google import genai
-
-def generate_narrative_premise(raw_keywords):
+def generate_narrative_premise(raw_keywords, tone_profile):
     """Dynamically assumes a persona based on keywords to generate a premise."""
     api_key = os.getenv("GEMINI_API_KEY")
     client = genai.Client(api_key=api_key)
@@ -16,16 +13,13 @@ def generate_narrative_premise(raw_keywords):
     I will give you raw YouTube search keywords: "{raw_keywords}"
     
     STEP 1: Analyze the keywords and determine the core subject (e.g., astrophysics, philosophy, speculative biology, history).
-    STEP 2: Instantly adopt the persona of a world-class expert in that specific field (e.g., a melancholic philosopher, a theoretical physicist, a rogue evolutionary biologist).
+    STEP 2: Instantly adopt the persona of a world-class expert in that specific field.
     STEP 3: Translate the keywords into a single, highly provocative, and captivating narrative premise for a 60-second short film.
     
-    DYNAMIC TONE RULES:
-    - If Philosophy/Existentialism: Make it heavy, melancholic, and deeply introspective.
-    - If Space/Cosmology: Make it mind-bending, isolating, and terrifyingly vast.
-    - If Speculative Science (e.g., human biology, physics "what ifs"): Make it wondrous, slightly unsettling, and paradigm-shifting.
-    - If History/True Crime: Make it gritty, cinematic, and suspenseful.
+    CRITICAL TONE RULE:
+    The tone of this premise MUST be strictly: {tone_profile}
     
-    Output ONLY the single sentence premise. No quotes, no pleasantries, no bullet points, and do NOT announce your assumed persona. Just deliver the raw, heavy premise.
+    Output ONLY the single sentence premise. No quotes, no pleasantries, no bullet points, and do NOT announce your assumed persona. Just deliver the raw premise.
     """
     
     try:
@@ -38,18 +32,22 @@ def generate_narrative_premise(raw_keywords):
         print(f"[ERROR] Premise generation failed: {e}")
         return raw_keywords
     
-def _get_prompt(topic_title, channel_aesthetic="Shot on 35mm film, anamorphic lens, f/2.8, melancholic, atmospheric, highly detailed, muted colors"):
+def _get_prompt(topic_title, tone_profile, channel_aesthetic="Shot on 35mm film, anamorphic lens, f/2.8, atmospheric, highly detailed, muted colors"):
     return f"""
     You are an expert YouTube Shorts retention engineer, scriptwriter, and AI image prompt specialist. 
     Your goal is to write a highly engaging 60-second script about: "{topic_title}" that achieves a 70%+ "Viewed" rate.
     
+    CRITICAL TONE REQUIREMENT:
+    The tone of this video MUST be strictly: {tone_profile}
+    Do not deviate from this tone. If the tone is factual, do not be philosophical.
+    
     CRITICAL RULES FOR RETENTION:
-    1. THE HOOK: The first 3 seconds must be a pattern interrupt. Start with a mind-bending fact or terrifying concept. NEVER use introductory phrases.
+    1. THE HOOK: The first 3 seconds must be a pattern interrupt. Start with a mind-bending fact or captivating concept. NEVER use introductory phrases.
     2. THE LOOP: The final sentence of the script MUST seamlessly, grammatically flow directly back into the very first sentence of Scene 1. 
     3. AUDIO PACING: Use frequent em-dashes (—) for dramatic pauses, ellipses (...) for trailing thoughts to make the AI voiceover sound cinematic and human.
     
     CRITICAL RULES FOR FLUX-SCHNELL IMAGE GENERATION:
-    1. PROSE, NOT KEYWORDS: Flux runs on natural language. Write fluid, highly descriptive paragraphs. NEVER use comma-separated AI buzzwords (e.g., "masterpiece, 8k, trending").
+    1. PROSE, NOT KEYWORDS: Flux runs on natural language. Write fluid, highly descriptive paragraphs. NEVER use comma-separated AI buzzwords.
     2. STRICT SPATIAL ORDER: Structure every prompt in this exact flow: [Subject Appearance] -> [Subject Action & Position in Frame] -> [Foreground/Background Details] -> [Lighting Physics].
     3. SCALE & VERTICAL DEPTH: Because this is a 9:16 vertical video, you must explicitly describe scale and depth. Tell me what is in the immediate foreground, and what looms massive in the distant background.
     4. NO NEGATIVE PROMPTS: The model cannot understand absence. Never use words like "no," "without," or "empty." Instead of "no people," describe "a barren, desolate wasteland."
@@ -69,14 +67,14 @@ def _get_prompt(topic_title, channel_aesthetic="Shot on 35mm film, anamorphic le
     Aim for exactly 4 to 6 scenes. Combined voiceover must be 130 to 150 words.
     """
 
-def generate_script_gemini(api_key, topic_title):
+def generate_script_gemini(api_key, topic_title, tone_profile):
     print(f"[INFO] Requesting script from Gemini for: '{topic_title}'...")
     client = genai.Client(api_key=api_key)
     
     try:
         response = client.models.generate_content(
             model='gemini-3-flash-preview',
-            contents=_get_prompt(topic_title),
+            contents=_get_prompt(topic_title, tone_profile),
             config=genai.types.GenerateContentConfig(
                 response_mime_type="application/json",
             ),
@@ -86,12 +84,12 @@ def generate_script_gemini(api_key, topic_title):
         print(f"[WARNING] Gemini Failed: {e}")
         return None
 
-def generate_script_ollama(topic_title, model_name="llama3"):
+def generate_script_ollama(topic_title, tone_profile, model_name="llama3"):
     print(f"[INFO] Falling back to local Ollama ({model_name})...")
     try:
         response = ollama.chat(
             model=model_name, 
-            messages=[{'role': 'user', 'content': _get_prompt(topic_title)}],
+            messages=[{'role': 'user', 'content': _get_prompt(topic_title, tone_profile)}],
             format='json'
         )
         return json.loads(response['message']['content'])
@@ -99,9 +97,9 @@ def generate_script_ollama(topic_title, model_name="llama3"):
         print(f"[ERROR] Ollama also failed: {e}")
         return None
 
-def draft_script(topic_title):
+def draft_script(topic_title, tone_profile):
     gemini_key = os.getenv("GEMINI_API_KEY")
-    script_data = generate_script_gemini(gemini_key, topic_title)
+    script_data = generate_script_gemini(gemini_key, topic_title, tone_profile)
     if not script_data:
-        script_data = generate_script_ollama(topic_title)
+        script_data = generate_script_ollama(topic_title, tone_profile)
     return script_data

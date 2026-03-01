@@ -24,13 +24,21 @@ def get_random_bg_music(base_dir):
         print("\n========================================")
         print("          SELECT MUSIC VIBE             ")
         print("========================================")
+        print("[-1] No Music (Voiceover Only)")
+        print("[0] Surprise Me (Random Category)")
         for i, cat in enumerate(categories):
             print(f"[{i + 1}] {cat}")
-        print(f"[0] Surprise Me (Random Category)")
         print("-" * 40)
         
         while True:
-            choice = input(f"Select a vibe (0-{len(categories)}): ")
+            choice = input(f"Select a vibe (-1 to {len(categories)}): ").strip()
+            
+            # The manual bypass for a pure voiceover
+            if choice == "-1":
+                print("[INFO] Opted for no background music. Proceeding with pure voiceover.")
+                return None
+                
+            # We check if it's a digit (handles 0 and positive numbers)
             if choice.isdigit():
                 choice_idx = int(choice)
                 if choice_idx == 0:

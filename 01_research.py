@@ -17,7 +17,7 @@ def run_research():
     queries = get_dynamic_queries("niches.txt")
     
     logger.info("========================================")
-    logger.info("        STATION 1: RESEARCH PHASE       ")
+    logger.info("        STATION 0: RESEARCH PHASE       ")
     logger.info("========================================")
 
     os.makedirs("data/logs", exist_ok=True)

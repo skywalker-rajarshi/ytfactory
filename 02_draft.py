@@ -7,27 +7,64 @@ from src.logger import get_factory_logger
 
 logger = get_factory_logger()
 
-def run_drafting(raw_input):
+def get_factory_inputs():
+    """The Master Router: Gathers inputs and determines if middleware is needed."""
+    logger.info("\n========================================")
+    logger.info("         STATION 1: INPUT ROUTER        ")
+    logger.info("========================================")
+    
+    # 1. Select Input Mode
+    print("[1] Direct Topic (e.g., 'Who is Dostoevsky?') -> Bypasses Middleware")
+    print("[2] Raw Keywords (e.g., '#space #blackhole') -> Uses Middleware")
+    mode = input("Select input mode (1 or 2): ").strip()
+    
+    raw_input = input("\nEnter your payload: ").strip()
+    
+    # 2. Select Tone Profile
+    print("\nSelect the Tone Profile:")
+    print("[1] Existential & Cinematic (Heavy, melancholic, introspective)")
+    print("[2] Hard Science & Factual (Objective, educational, clear)")
+    print("[3] Fast-Paced Tech (Punchy, analytical, systems-focused)")
+    print("[4] Dark Historical (Gritty, grounded, biographical)")
+    tone_choice = input("Select tone (1-4): ").strip()
+    
+    tone_map = {
+        "1": "heavy, melancholic, and deeply introspective.",
+        "2": "highly factual, objective, educational, and clear. Avoid overly poetic language.",
+        "3": "punchy, analytical, high-energy, focusing on systems and mechanics.",
+        "4": "gritty, grounded, biographical, focusing on realities without over-romanticizing."
+    }
+    tone_profile = tone_map.get(tone_choice, tone_map["1"])
+    
+    # 3. Execute Routing Logic
+    if mode == "2":
+        logger.info(f"[INFO] Routing keywords through Middleware to generate premise...")
+        final_topic = generate_narrative_premise(raw_input, tone_profile)
+        logger.info(f"\n[SUCCESS] Middleware Output: {final_topic}\n")
+    else:
+        final_topic = raw_input
+        logger.info(f"\n[SUCCESS] Direct Injection: {final_topic}\n")
+        
+    return final_topic, tone_profile
+
+def run_drafting():
     load_dotenv()
+    os.makedirs("data/logs", exist_ok=True)
+    
+    # Fire the interactive router
+    final_topic, tone_profile = get_factory_inputs()
+    
     logger.info("========================================")
     logger.info("        STATION 2: SCRIPT DRAFTING      ")
     logger.info("========================================")
     
-    os.makedirs("data/logs", exist_ok=True)
-    
-    # 1. The Middleware Translation
-    logger.info(f"[INFO] Raw Input Received: {raw_input}")
-    logger.info("[INFO] Generating Provocative Premise...")
-    
-    premise = generate_narrative_premise(raw_input)
-    logger.info(f"\n[DIRECTIVE] => {premise}\n")
-    
-    # 2. The Main Script Generation
     logger.info("[INFO] Drafting highly optimized Shorts script...")
-    script_json = draft_script(premise) # Pass the expanded premise, not the hashtags
+    
+    # Pass both the topic and the tone to the backend engine
+    script_json = draft_script(final_topic, tone_profile) 
     
     if not script_json:
-        logger.error(f"Script drafting failed for topic: {premise}")
+        logger.error(f"Script drafting failed for topic: {final_topic}")
         sys.exit(1)
 
     output_path = "data/logs/latest_script.json"
@@ -37,9 +74,4 @@ def run_drafting(raw_input):
     logger.info(f"[SUCCESS] Script saved to {output_path}")
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        logger.error("Missing topic argument. Usage: python3 02_draft.py \"Topic\"")
-        sys.exit(1)
-    
-    target_topic = sys.argv[1]
-    run_drafting(target_topic)
+    run_drafting()

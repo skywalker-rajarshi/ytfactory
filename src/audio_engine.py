@@ -18,25 +18,63 @@ def _format_ass_time(seconds):
     secs = seconds % 60
     return f"{hours}:{minutes:02d}:{secs:05.2f}"
 
+def get_voice_selection():
+    """Maps Kokoro voices to their emotional tones and allows user selection."""
+    # The Tone Map: Linking Kokoro profile IDs to their cinematic vibe
+    voice_map = {
+        "1": {"id": "am_michael", "tone": "Deep, dramatic, cinematic (Male)"},
+        "2": {"id": "af_bella",   "tone": "Soft, breathy, melancholic (Female)"},
+        "3": {"id": "am_adam",    "tone": "Clear, grounded, conversational (Male)"},
+        "4": {"id": "bf_emma",    "tone": "Cold, clinical, British (Female)"},
+        "5": {"id": "bm_george",  "tone": "Warm, authoritative, British (Male)"},
+        "6": {"id": "af_sky",     "tone": "Crisp, modern, documentary (Female)"}
+    }
+    
+    print("\n========================================")
+    print("         SELECT NEURAL VOICE TONE       ")
+    print("========================================")
+    
+    for key, info in voice_map.items():
+        print(f"[{key}] {info['id'].ljust(12)} | Vibe: {info['tone']}")
+    print("-" * 40)
+    
+    while True:
+        choice = input("Select a voice (1-6) or press Enter for default [am_michael]: ").strip()
+        
+        # Default to Michael if you just hit Enter to speed up the workflow
+        if not choice:
+            print("[INFO] Defaulting to: am_michael")
+            return "am_michael"
+            
+        if choice in voice_map:
+            selected = voice_map[choice]["id"]
+            print(f"[INFO] Voice locked: {selected}")
+            return selected
+            
+        print("[ERROR] Invalid selection. Please enter a number from 1 to 6.")
+
 def generate_audio_offline(script_json, audio_path):
     """Generates ultra-realistic voiceover using the local Kokoro Neural Network."""
+    
+    # 1. Trigger the Tone Router before booting the heavy neural net
+    selected_voice = get_voice_selection()
+    
     print("[INFO] Booting Kokoro Neural TTS Engine (Offline)...")
     full_text = " ".join([scene["voiceover"] for scene in script_json["scenes"]])
     
     try:
-        # Load the neural network into memory
+        from kokoro_onnx import Kokoro
+        import soundfile as sf
         kokoro = Kokoro("models/kokoro/kokoro-v1.0.onnx", "models/kokoro/voices-v1.0.bin")
     except Exception as e:
-        print(f"[ERROR] Failed to load Kokoro models. Did you run the curl downloads? {e}")
+        print(f"[ERROR] Failed to load Kokoro models: {e}")
         return False
 
     try:
-        # am_michael is a deep, highly cinematic male voice. 
-        # We slow the speed to 0.9 for a heavier, more dramatic read.
-        print("[INFO] Synthesizing speech array...")
-        samples, sample_rate = kokoro.create(full_text, voice="am_michael", speed=0.9, lang="en-us")
+        print(f"[INFO] Synthesizing speech array using profile: {selected_voice}...")
+        # We pass your dynamically selected voice into the engine
+        samples, sample_rate = kokoro.create(full_text, voice=selected_voice, speed=0.9, lang="en-us")
         
-        # Write the numpy array to a high-fidelity WAV file
         sf.write(audio_path, samples, sample_rate)
         print(f"[SUCCESS] Cinematic neural audio saved to {audio_path}")
         return True
