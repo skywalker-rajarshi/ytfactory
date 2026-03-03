@@ -5,3 +5,4 @@ data/
 src/__pycache__/
 niches.txt
 models/
+.ytfactory/
