@@ -14,7 +14,7 @@ fi
 echo "Starting Factory Pipeline for: $TOPIC"
 
 # Activate virtual environment
-source ./ytfactory/bin/activate
+source ./.venv/bin/activate
 
 # Run the modules sequentially
 python3 02_draft.py "$TOPIC"
