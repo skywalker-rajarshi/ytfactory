@@ -4,6 +4,7 @@ import os
 from dotenv import load_dotenv
 from src.llm_engine import draft_script, generate_narrative_premise
 from src.logger import get_factory_logger
+from src.persona_manager import get_persona_selection
 
 logger = get_factory_logger()
 
@@ -20,39 +21,26 @@ def get_factory_inputs():
     
     raw_input = input("\nEnter your payload: ").strip()
     
-    # 2. Select Tone Profile
-    print("\nSelect the Tone Profile:")
-    print("[1] Existential & Cinematic (Heavy, melancholic, introspective)")
-    print("[2] Hard Science & Factual (Objective, educational, clear)")
-    print("[3] Fast-Paced Tech (Punchy, analytical, systems-focused)")
-    print("[4] Dark Historical (Gritty, grounded, biographical)")
-    tone_choice = input("Select tone (1-4): ").strip()
-    
-    tone_map = {
-        "1": "heavy, melancholic, and deeply introspective.",
-        "2": "highly factual, objective, educational, and clear. Avoid overly poetic language.",
-        "3": "punchy, analytical, high-energy, focusing on systems and mechanics.",
-        "4": "gritty, grounded, biographical, focusing on realities without over-romanticizing."
-    }
-    tone_profile = tone_map.get(tone_choice, tone_map["1"])
+    # 2. Fire the Persona Manager (Replaces hardcoded Tone Map)
+    persona_instruction = get_persona_selection()
     
     # 3. Execute Routing Logic
     if mode == "2":
         logger.info(f"[INFO] Routing keywords through Middleware to generate premise...")
-        final_topic = generate_narrative_premise(raw_input, tone_profile)
+        final_topic = generate_narrative_premise(raw_input, persona_instruction)
         logger.info(f"\n[SUCCESS] Middleware Output: {final_topic}\n")
     else:
         final_topic = raw_input
         logger.info(f"\n[SUCCESS] Direct Injection: {final_topic}\n")
         
-    return final_topic, tone_profile
+    return final_topic, persona_instruction
 
 def run_drafting():
     load_dotenv()
     os.makedirs("data/logs", exist_ok=True)
     
     # Fire the interactive router
-    final_topic, tone_profile = get_factory_inputs()
+    final_topic, persona_instruction = get_factory_inputs()
     
     logger.info("========================================")
     logger.info("        STATION 2: SCRIPT DRAFTING      ")
@@ -60,8 +48,8 @@ def run_drafting():
     
     logger.info("[INFO] Drafting highly optimized Shorts script...")
     
-    # Pass both the topic and the tone to the backend engine
-    script_json = draft_script(final_topic, tone_profile) 
+    # Pass both the topic and the persona to the backend engine
+    script_json = draft_script(final_topic, persona_instruction) 
     
     if not script_json:
         logger.error(f"Script drafting failed for topic: {final_topic}")
