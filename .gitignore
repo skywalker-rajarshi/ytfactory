@@ -7,3 +7,4 @@ niches.txt
 models/
 .ytfactory/
 .venv/
+tests/
