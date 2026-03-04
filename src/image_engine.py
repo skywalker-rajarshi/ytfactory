@@ -115,7 +115,7 @@ def generate_all_images(script_json, base_filename="data/assets/scene"):
     print(f"\n[INFO] Locking visual consistency with Master Seed: {master_seed}")
     
     print("========================================")
-    print("        STATION 2: ASSET ROUTER         ")
+    print("        ASSET ROUTER         ")
     print("========================================")
     
     scenes = script_json.get("scenes", [])
