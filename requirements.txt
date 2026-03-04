@@ -32,6 +32,7 @@ google-auth==2.48.0
 google-auth-httplib2==0.3.0
 google-genai==1.64.0
 googleapis-common-protos==1.72.0
+groq==1.0.0
 grpcio==1.78.1
 grpcio-status==1.71.2
 h11==0.16.0
@@ -43,6 +44,7 @@ huggingface_hub==1.5.0
 idna==3.11
 ImageIO==2.37.2
 imageio-ffmpeg==0.6.0
+iniconfig==2.3.0
 isodate==0.7.2
 joblib==1.5.3
 jsonschema==4.26.0
@@ -60,6 +62,7 @@ onnxruntime==1.24.2
 packaging==26.0
 phonemizer-fork==3.3.1
 pillow==11.3.0
+pluggy==1.6.0
 proglog==0.1.12
 propcache==0.4.1
 proto-plus==1.27.1
@@ -71,6 +74,7 @@ pydantic==2.12.5
 pydantic_core==2.41.5
 Pygments==2.19.2
 pyparsing==3.3.2
+pytest==9.0.2
 python-dateutil==2.9.0.post0
 python-dotenv==1.2.1
 PyYAML==6.0.3
