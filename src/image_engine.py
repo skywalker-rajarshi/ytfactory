@@ -30,7 +30,7 @@ def is_image_corrupted(file_path):
     return False
 
 def generate_flux_image_replicate(prompt, output_filename, master_seed):
-    """Your original Replicate engine, adapted to run scene-by-scene."""
+    """Your original Replicate engine, adapted to run scene-by-scene with download retries."""
     api_token = os.getenv("REPLICATE_API_TOKEN")
     if not api_token:
         print("[ERROR] Missing REPLICATE_API_TOKEN in .env file.")
@@ -59,10 +59,11 @@ def generate_flux_image_replicate(prompt, output_filename, master_seed):
     max_retries = 5
     base_delay = 10
 
-    # --- THE EXPONENTIAL BACKOFF RETRY LOOP ---
+    # --- THE EXPONENTIAL BACKOFF RETRY LOOP (POST REQUEST) ---
     for attempt in range(max_retries):
         try:
-            response = requests.post(endpoint, json=payload, headers=headers)
+            # Added a 15-second timeout so the request doesn't hang indefinitely
+            response = requests.post(endpoint, json=payload, headers=headers, timeout=15)
             
             if response.status_code == 429:
                 wait_time = base_delay * (2 ** attempt)
@@ -81,30 +82,37 @@ def generate_flux_image_replicate(prompt, output_filename, master_seed):
         print(f"[ERROR] Permanently failed after {max_retries} retries.")
         return False
 
-    # --- THE POLLING LOOP ---
-    try:
-        while prediction["status"] not in ["succeeded", "failed", "canceled"]:
-            time.sleep(2) 
-            poll_resp = requests.get(prediction["urls"]["get"], headers=headers)
-            poll_resp.raise_for_status()
-            prediction = poll_resp.json()
+    # --- THE POLLING & DOWNLOAD LOOP (NOW WITH RETRIES) ---
+    max_poll_retries = 5
+    for attempt in range(max_poll_retries):
+        try:
+            # Poll for completion with a 10-second timeout
+            while prediction["status"] not in ["succeeded", "failed", "canceled"]:
+                time.sleep(2) 
+                poll_resp = requests.get(prediction["urls"]["get"], headers=headers, timeout=10)
+                poll_resp.raise_for_status()
+                prediction = poll_resp.json()
 
-        if prediction["status"] != "succeeded":
-            print(f"[ERROR] Generation failed on Replicate's end: {prediction.get('error')}")
-            return False
+            if prediction["status"] != "succeeded":
+                print(f"[ERROR] Generation failed on Replicate's end: {prediction.get('error')}")
+                return False
 
-        image_url = prediction["output"][0]
-        img_data = requests.get(image_url).content
-        
-        with open(output_filename, "wb") as handler:
-            handler.write(img_data)
-        
-        print(f"[SUCCESS] AI Asset saved to {output_filename}")
-        return True
+            # Download the final asset with a 15-second timeout
+            image_url = prediction["output"][0]
+            img_data = requests.get(image_url, timeout=15).content
+            
+            with open(output_filename, "wb") as handler:
+                handler.write(img_data)
+            
+            print(f"[SUCCESS] AI Asset saved to {output_filename}")
+            return True
 
-    except Exception as e:
-        print(f"[ERROR] Failed to download or poll: {e}")
-        return False
+        except Exception as e:
+            print(f"[WARNING] Network drop during poll/download (Attempt {attempt+1}/{max_poll_retries}): {e}")
+            time.sleep(5) # Give the connection a moment to breathe before trying again
+            
+    print(f"[ERROR] Permanently failed to download the AI image after {max_poll_retries} retries.")
+    return False
 
 def generate_all_images(script_json, base_filename="data/assets/scene"):
     """
